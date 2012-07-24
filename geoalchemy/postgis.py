@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import select, func, and_
+from sqlalchemy import Column, select, func, and_
+from sqlalchemy import column_property
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement, \
     WKBSpatialElement, WKTSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
+from geoalchemy.geometry import SpatialAttribute
 
 class PGComparator(SpatialComparator):
     """Comparator class used for PostGIS
@@ -50,6 +52,25 @@ class pg_functions(functions):
     
     class expand(BaseFunction):
         """Expand(g)"""
+        pass
+
+    class ewkt(BaseFunction):
+        """As Enhanced WKT"""
+        pass
+
+    class azimuth(BaseFunction):
+        """Returns angle in radians from horizontal of vectors, Per
+        PostGIS documentation is computed clockwise from 12 o clock 
+        (12 = 0, 3 = pi/2, 6 = pi, 9 = 3 pi/2)
+        """
+        pass
+
+    class project(BaseFunction):
+        """Returns POINT geography type given a point, distance, and azimuth"""
+        pass
+
+    class summary(BaseFunction):
+        """Returns string that summarizes geography/geometry type"""
         pass
 
     @staticmethod
@@ -114,6 +135,9 @@ class PGSpatialDialect(SpatialDialect):
                    pg_functions.gml : 'ST_AsGML',
                    pg_functions.geojson : 'ST_AsGeoJSON',
                    pg_functions.expand : 'ST_Expand',
+                   pg_functions.summary: 'ST_Summary',
+                   pg_functions.ewkt: 'ST_AsEWKT',
+                   pg_functions.azimuth: 'ST_Azimuth',
                    functions._within_distance : pg_functions._within_distance
                   }
     
@@ -143,3 +167,32 @@ class PGSpatialDialect(SpatialDialect):
             bind.execute("ALTER TABLE \"%s\".\"%s\" ALTER COLUMN \"%s\" SET not null" % 
                             ((table.schema or 'public'), table.name, column.name))
             
+class PGGeogSpatialDialect(PGSpatialDialect):
+
+    __functions = {
+                   WKTSpatialElement: 'ST_GeogFromText',
+                   WKBSpatialElement: 'ST_GeogFromWKB',
+                   functions.wkb: 'ST_AsBinary',
+                   functions.area : 'ST_Area',
+                   functions.wkt: 'ST_AsText',
+                   functions.intersects : 'ST_Intersects',
+                   functions.buffer : 'ST_Buffer',
+                   functions.covered_by : 'ST_CoveredBy',
+                   functions.length : 'ST_Length',
+                   functions.intersection : 'ST_Intersection',
+                   functions.covers : 'ST_Covers',
+                   functions.within_distance : 'ST_DWithin',
+                   functions.distance : 'ST_Distance',
+                   pg_functions.project: 'ST_Project',
+                   pg_functions.svg : 'ST_AsSVG',
+                   pg_functions.kml : 'ST_AsKML',
+                   pg_functions.gml : 'ST_AsGML',
+                   pg_functions.summary: 'ST_Summary',
+                   pg_functions.geojson : 'ST_AsGeoJSON',
+                   pg_functions.azimuth: 'ST_Azimuth',
+                   pg_functions.ewkt: 'ST_AsEWKT'
+            }
+
+    def _get_function_mapping(self):
+        return PGSpatialDialect.__functions
+

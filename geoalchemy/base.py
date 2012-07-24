@@ -190,6 +190,21 @@ class GeometryBase(UserDefinedType):
                    spatial_index=self.spatial_index,
                    wkt_internal=self.wkt_internal, **self.kwargs)
 
+class GeographyBase(GeometryBase):
+    """
+    Base Geography column type.  Currently only supported in POSTGIS!
+    """
+    name = "Geography"
+
+    def __init__(self, dimension=2, srid=4326, spatial_index=True,
+                 wkt_internal=False, **kwargs):
+        self.dimension = dimension
+        self.srid = srid
+        self.spatial_index = spatial_index
+        self.wkt_internal = wkt_internal
+        self.kwargs = kwargs
+        super(GeometryBase, self).__init__()
+
 # ORM integration
 
 def _to_gis(value, srid_db):
